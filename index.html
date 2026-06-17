@@ -81,7 +81,7 @@
         }
         button {
             padding: 14px; font-size: 0.95em; font-weight: bold; border: none;
-            border-radius: 8px; cursor: pointer; text-transform: uppercase;
+            border-radius: 8px; cursor: pointer;
             letter-spacing: 0.5px; transition: background 0.2s;
         }
         .btn-accion  { background: var(--accent); color: white; width: 100%; }
@@ -111,6 +111,72 @@
         .tabla-resumen th { background-color: #f8f9fa; color: var(--primary); font-weight: bold; }
         .resalte-verde { color: #27ae60; font-weight: bold; }
  
+        /* ── INDICADORES DE ESTADO ACTIVO (CONGESTIÓN/CARRIL) ── */
+        #contenedor-estados-activos {
+            position: absolute;
+            top: 15px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 900;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .badge-estado {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 15px;
+            border-radius: 25px;
+            font-size: 0.85em;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid transparent;
+            white-space: nowrap;
+            animation: fade-in-scale 0.3s ease-out;
+        }
+        @keyframes fade-in-scale {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .badge-media { border-color: var(--warning); color: #b7770d; }
+        .badge-critica { border-color: var(--danger); color: #c0392b; }
+        .badge-carril { border-color: #16a085; color: #16a085; }
+        .badge-info { border-color: var(--info); color: var(--info); }
+
+        /* Estilos para inputs adicionales más pequeños */
+        .input-extra {
+            margin-top: 8px;
+            padding: 8px 12px !important;
+            font-size: 0.82em !important;
+            background: rgba(255,255,255,0.05) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+
+        /* ── SELECTORES RÁPIDOS ── */
+        .selector-rapido {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+            gap: 8px;
+            margin-top: 5px;
+        }
+        .btn-seleccion {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 5px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-seleccion.seleccionado {
+            background: var(--accent);
+            border-color: var(--accent);
+            font-weight: bold;
+        }
+
         #mapa-reporte-contenedor {
             height: 320px; width: 100%; margin-top: 10px; border-radius: 10px;
             border: 1px solid #bdc3c7; overflow: hidden;
@@ -143,7 +209,7 @@
         .seccion-obs-libre label { font-size: 0.85em; font-weight: bold; color: var(--primary); display: block; margin-bottom: 6px; }
         .wrapper-input-libre { display: flex; gap: 6px; }
         .wrapper-input-libre input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9em; }
-        .btn-guardar-libre { background: var(--warning); color: white; padding: 10px 14px; font-size: 0.85em; text-transform: uppercase; }
+        .btn-guardar-libre { background: var(--warning); color: white; padding: 10px 14px; font-size: 0.85em; }
  
         /* ── MODAL SEMÁFORO ── */
         #modal-semaforo {
@@ -229,19 +295,43 @@
  
     <div class="form-group">
         <label>Sentido de Circulación:</label>
-        <input type="text" id="in-sentido" placeholder="Ej: Norte-Sur / Ida">
+        <input type="hidden" id="in-sentido">
+        <div class="selector-rapido" id="selector-sentido">
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Norte-Sur', this)">⬆️ Norte a Sur</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Sur-Norte', this)">⬇️ Sur a Norte</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Este-Oeste', this)">⬅️ Este a Oeste</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Oeste-Este', this)">➡️ Oeste a Este</button>
+        </div>
     </div>
     <div class="form-group">
         <label>Operador / Relevador:</label>
-        <input type="text" id="in-operador" placeholder="Ej: Juan Pérez">
+        <div class="selector-rapido" id="selector-operador" style="margin-bottom: 8px;">
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-operador', 'Malena', this)">Malena</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-operador', 'Brenda', this)">Brenda</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-operador', 'Matías', this)">Matías</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-operador', 'Marcos', this)">Marcos</button>
+        </div>
+        <input type="text" id="in-operador" placeholder="Ej: Juan Pérez" oninput="deseleccionarBotones('selector-operador')">
     </div>
     <div class="form-group">
         <label>Condición Climática:</label>
-        <input type="text" id="in-clima" placeholder="Ej: Despejado, lluvia leve...">
+        <input type="hidden" id="in-clima">
+        <div class="selector-rapido" id="selector-clima">
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-clima', 'Despejado', this)">☀️ Soleado</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-clima', 'Nublado', this)">☁️ Nublado</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-clima', 'Lluvia', this)">🌧️ Lluvia</button>
+        </div>
+        <input type="text" id="in-clima-extra" class="input-extra" placeholder="Nota adicional o clima distinto...">
     </div>
     <div class="form-group">
         <label>Período del Día:</label>
-        <input type="text" id="in-periodo" placeholder="Ej: Hora pico mañana, Valle tarde...">
+        <input type="hidden" id="in-periodo">
+        <div class="selector-rapido" id="selector-periodo">
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Pico Mañana', this)">🌅 Pico Mañana</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Valle', this)">☀️ Valle</button>
+            <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Pico Tarde', this)">🌇 Pico Tarde</button>
+        </div>
+        <input type="text" id="in-periodo-extra" class="input-extra" placeholder="Otro/Adicional...">
     </div>
  
     <hr class="separador-form">
@@ -249,7 +339,7 @@
  
     <div class="form-group">
         <label>Distancia del Tramo (metros):</label>
-        <input type="number" id="in-distancia-ref" placeholder="Ej: 2350" min="0" step="1">
+        <input type="number" id="in-distancia-ref" class="input-extra" placeholder="Ej: 2350" min="0" step="1">
         <span class="campo-opcional">Si completás este campo, el informe calculará el error relativo del GPS.</span>
     </div>
  
@@ -272,6 +362,7 @@
  
     <div id="map-wrapper">
         <div id="map"></div>
+        <div id="contenedor-estados-activos"></div>
         <div id="badge-gps-precision"></div>
     </div>
  
@@ -448,9 +539,15 @@ const UMBRAL_VELOCIDAD_MAXIMA = 120;  // km/h — filtro de spike GPS (antes 140
 // ────────────────────────────────────────────────────
 //  ESTADO GLOBAL
 // ────────────────────────────────────────────────────
-let map, rutaInstancia, watchId = null, cronometroId = null;
+let map, rutaInstancia, watchId = null, cronometroId = null, wakeLock = null;
 let historialDatos = [];
 let registroEventosEspeciales = [];
+let analisisIntervalosVelocidad = [];
+let estadosActivos = {
+    media: false,
+    critica: false,
+    carrilLento: false
+};
  
 let segTotales = 0, segMovimiento = 0, segFrenadoTotal = 0;
 let segDesdeUltimaParada = 0, distanciaTotalMetros = 0;
@@ -495,15 +592,63 @@ function cambiarPantalla(idPantalla) {
     document.getElementById(idPantalla).classList.add('activa');
 }
  
+/**
+ * Maneja la selección de botones rápidos
+ */
+function seleccionarOpcion(idInput, valor, elemento) {
+    document.getElementById(idInput).value = valor;
+    const contenedor = elemento.parentElement;
+    contenedor.querySelectorAll('.btn-seleccion').forEach(btn => btn.classList.remove('seleccionado'));
+    elemento.classList.add('seleccionado');
+}
+
+/**
+ * Deselecciona botones en un contenedor cuando se escribe manualmente
+ */
+function deseleccionarBotones(idContenedor) {
+    const contenedor = document.getElementById(idContenedor);
+    if (contenedor) {
+        contenedor.querySelectorAll('.btn-seleccion').forEach(btn => btn.classList.remove('seleccionado'));
+    }
+}
+
+/**
+ * Combina valor de selector con texto adicional
+ */
+function obtenerValorCompuesto(idBase) {
+    const valPrincipal = document.getElementById(idBase).value;
+    const elExtra = document.getElementById(idBase + '-extra');
+    const valExtra = elExtra ? elExtra.value.trim() : "";
+    if (valPrincipal && valExtra) return `${valPrincipal} (${valExtra})`;
+    return valPrincipal || valExtra || '-';
+}
+
+/**
+ * Solicita que la pantalla no se apague (Wake Lock)
+ */
+async function solicitarWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log("Wake Lock activo: La pantalla no se apagará.");
+        } catch (err) {
+            console.error("Error al activar Wake Lock:", err);
+        }
+    }
+}
+
 // ────────────────────────────────────────────────────
 //  INICIO DE RECORRIDO
 // ────────────────────────────────────────────────────
-function irAPantallaApp() {
+async function irAPantallaApp() {
     if (!document.getElementById('in-lugar').value.trim()) {
         alert("Debe especificar la vialidad o corredor bajo estudio.");
         return;
     }
  
+    // Intentar mantener la pantalla encendida
+    await solicitarWakeLock();
+
     // Reset completo
     historialDatos = []; registroEventosEspeciales = [];
     segTotales = 0; segMovimiento = 0; segFrenadoTotal = 0;
@@ -614,7 +759,7 @@ function procesarTelemetriaGPS(position) {
         if (!estaDetenido && ticksBajoUmbral >= TICKS_MIN_PARADA) {
             estaDetenido = true;
             inicioParadaTime = Date.now();
-            registrarLogGeneral(lat, lng, velocidadKmh, "INICIO_PARADA",
+            registrarLogGeneral(lat, lng, velocidadKmh, "INICIO_PARADA", 
                 `Previo en marcha: ${segDesdeUltimaParada}s`);
             marcadorParadaActual = L.circleMarker([lat, lng], {
                 radius: 9, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.8
@@ -788,12 +933,119 @@ function obtenerIconoVisual(tipoString) {
 //  OBSERVACIONES MANUALES
 // ────────────────────────────────────────────────────
 function abrirModalObs()  { document.getElementById('modal-obs').style.display = 'flex'; }
+
+/**
+ * Analiza el historial de datos para calcular la velocidad media por intervalos de marcha.
+ * Un intervalo de marcha se define como un segmento continuo de estado "MARCHA"
+ * que termina al encontrar un estado "FRENADO" o "INICIO_PARADA", o al final del recorrido.
+ */
+function analizarVelocidadPorIntervalos() {
+    analisisIntervalosVelocidad = [];
+    let currentSegment = [];
+    let segmentStartTime = null;
+    let segmentStartLat = null;
+    let segmentStartLng = null;
+    let segmentDistance = 0;
+
+    for (let i = 0; i < historialDatos.length; i++) {
+        const punto = historialDatos[i];
+        const nextPunto = historialDatos[i + 1];
+
+        if (punto.Estado === "MARCHA") {
+            if (currentSegment.length === 0) {
+                segmentStartTime = punto.Timestamp;
+                segmentStartLat = parseFloat(punto.Latitud);
+                segmentStartLng = parseFloat(punto.Longitud);
+                segmentDistance = 0;
+            }
+            currentSegment.push(punto);
+
+            if (currentSegment.length > 1) {
+                const prevPunto = currentSegment[currentSegment.length - 2];
+                const distM = calcularDistanciaHaversine(parseFloat(prevPunto.Latitud), parseFloat(prevPunto.Longitud), parseFloat(punto.Latitud), parseFloat(punto.Longitud));
+                segmentDistance += distM;
+            }
+        }
+
+        const isEndOfSegment = (nextPunto && (nextPunto.Estado === "FRENADO" || nextPunto.Estado === "INICIO_PARADA")) || (i === historialDatos.length - 1);
+
+        if (currentSegment.length > 0 && isEndOfSegment) {
+            const segmentEndTime = punto.Timestamp;
+            const segmentDurationSec = (segmentEndTime - segmentStartTime) / 1000;
+            let averageSpeedKmh = 0;
+            if (segmentDurationSec > 0) {
+                averageSpeedKmh = (segmentDistance / segmentDurationSec) * 3.6;
+            }
+
+            analisisIntervalosVelocidad.push({
+                inicio: new Date(segmentStartTime).toLocaleTimeString('es-AR'),
+                fin: new Date(segmentEndTime).toLocaleTimeString('es-AR'),
+                duracion: formatearMinutosSegundos(Math.floor(segmentDurationSec)),
+                distancia: segmentDistance > 1000 ? (segmentDistance/1000).toFixed(2) + " km" : Math.floor(segmentDistance) + " m",
+                velocidadMedia: averageSpeedKmh.toFixed(1) + " km/h"
+            });
+            currentSegment = [];
+        }
+    }
+}
+
 function cerrarModalObs() {
     document.getElementById('modal-obs').style.display = 'none';
     document.getElementById('in-obs-manual').value = "";
 }
  
+/**
+ * Actualiza los indicadores persistentes (Congestión)
+ */
+function actualizarBadgesEstados() {
+    const cont = document.getElementById('contenedor-estados-activos');
+    // Eliminar solo los badges persistentes existentes para no pisar los flashes temporales
+    const persistentes = cont.querySelectorAll('.badge-persistent');
+    persistentes.forEach(el => el.remove());
+
+    if (estadosActivos.media) {
+        const b = document.createElement('div');
+        b.className = "badge-estado badge-media badge-persistent";
+        b.innerHTML = "🟡 Congestión Media Activa";
+        cont.prepend(b);
+    }
+    if (estadosActivos.critica) {
+        const b = document.createElement('div');
+        b.className = "badge-estado badge-critica badge-persistent";
+        b.innerHTML = "🔴 Congestión Crítica Activa";
+        cont.prepend(b);
+    }
+}
+
+/**
+ * Muestra un indicador temporal (flash) para confirmar una acción
+ */
+function notificarAccion(texto, clase) {
+    const cont = document.getElementById('contenedor-estados-activos');
+    const b = document.createElement('div');
+    b.className = `badge-estado ${clase} badge-flash`;
+    b.innerHTML = `✅ ${texto}`;
+    cont.appendChild(b);
+    
+    setTimeout(() => {
+        b.style.opacity = '0';
+        b.style.transition = 'opacity 0.5s';
+        setTimeout(() => b.remove(), 500);
+    }, 3000);
+}
+
 function inyectarObservacion(tipoObs) {
+    const esInicioMedia = tipoObs.includes('Inicio Congestión Media');
+    const esFinMedia    = tipoObs.includes('Fin Congestión Media');
+    const esInicioCrit  = tipoObs.includes('Inicio Congestión Crítica');
+    const esFinCrit     = tipoObs.includes('Fin Congestión Crítica');
+
+    // Lógica para evitar duplicar inicios o finalizar estados no activos
+    if (esInicioMedia && estadosActivos.media) return;
+    if (esInicioCrit  && estadosActivos.critica) return;
+    if (esFinMedia    && !estadosActivos.media) return;
+    if (esFinCrit     && !estadosActivos.critica) return;
+
     const lat = ultimoPunto ? ultimoPunto.lat : 0;
     const lng = ultimoPunto ? ultimoPunto.lng : 0;
     registrarLogGeneral(lat, lng, 0, "OBSERVACION", tipoObs);
@@ -805,6 +1057,17 @@ function inyectarObservacion(tipoObs) {
         refIndex: historialDatos.length - 1,
         tipo: "observacion"
     });
+
+    // Actualización de estados lógicos para recordatorios visuales
+    if (tipoObs.includes('Inicio Congestión Media'))   estadosActivos.media = true;
+    if (tipoObs.includes('Fin Congestión Media'))      estadosActivos.media = false;
+    if (tipoObs.includes('Inicio Congestión Crítica')) estadosActivos.critica = true;
+    if (tipoObs.includes('Fin Congestión Crítica'))    estadosActivos.critica = false;
+    if (tipoObs.includes('Rápido a Lento'))            estadosActivos.carrilLento = true;
+    if (tipoObs.includes('Lento a Rápido'))            estadosActivos.carrilLento = false;
+
+    actualizarBadgesEstados();
+
     if (ultimoPunto) {
         L.marker([lat, lng], { icon: obtenerIconoVisual(tipoObs) })
             .addTo(map)
@@ -933,8 +1196,8 @@ function irAResumen() {
     document.getElementById('rep-sentido').innerText   = document.getElementById('in-sentido').value || '-';
     document.getElementById('rep-fecha').innerText     = fechaHoraEstudio;
     document.getElementById('rep-operador').innerText  = document.getElementById('in-operador').value || '-';
-    document.getElementById('rep-clima').innerText     = document.getElementById('in-clima').value    || '-';
-    document.getElementById('rep-periodo').innerText   = document.getElementById('in-periodo').value  || '-';
+    document.getElementById('rep-clima').innerText     = obtenerValorCompuesto('in-clima');
+    document.getElementById('rep-periodo').innerText   = obtenerValorCompuesto('in-periodo');
  
     document.getElementById('rep-distancia').innerText  = distFinalText;
  
@@ -988,6 +1251,18 @@ function irAResumen() {
         });
     }
  
+    // ── Tabla de intervalos ──
+    analizarVelocidadPorIntervalos();
+    const tbodyInt = document.querySelector('#tabla-velocidad-intervalos tbody');
+    tbodyInt.innerHTML = "";
+    if (analisisIntervalosVelocidad.length === 0) {
+        tbodyInt.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#95a5a6;">Sin tramos de marcha identificados.</td></tr>`;
+    } else {
+        analisisIntervalosVelocidad.forEach(int => {
+            tbodyInt.innerHTML += `<tr><td>${int.inicio}</td><td>${int.fin}</td><td>${int.duracion}</td><td>${int.distancia}</td><td>${int.velocidadMedia}</td></tr>`;
+        });
+    }
+
     // ── Perfil de velocidad ──
     dibujarPerfilVelocidad();
  
@@ -1136,8 +1411,8 @@ function subirAGoogleDrive() {
         hasta:             document.getElementById('in-hasta').value   || 'Punto Final',
         sentido:           document.getElementById('in-sentido').value || '-',
         operador:          document.getElementById('in-operador').value || '-',
-        clima:             document.getElementById('in-clima').value    || '-',
-        periodo:           document.getElementById('in-periodo').value  || '-',
+        clima:             obtenerValorCompuesto('in-clima'),
+        periodo:           obtenerValorCompuesto('in-periodo'),
         distanciaRef:      distanciaReferenciaMts ? (distanciaReferenciaMts >= 1000
             ? (distanciaReferenciaMts / 1000).toFixed(3) + " km"
             : distanciaReferenciaMts + " m") : '-',
@@ -1164,12 +1439,19 @@ function subirAGoogleDrive() {
         payloadData.errorGps = document.getElementById('rep-error-gps').innerText;
     }
  
+    // Formatear tablas para el HTML del Drive
     let filasEv = registroEventosEspeciales.length === 0
         ? "<tr><td colspan='3' style='text-align:center;'>Sin eventos.</td></tr>"
         : registroEventosEspeciales
             .map(e => `<tr><td>${e.hora}</td><td>${e.evento}</td><td>${e.detalle}</td></tr>`)
             .join("");
  
+    let filasInt = analisisIntervalosVelocidad.length === 0
+        ? "<tr><td colspan='5' style='text-align:center;'>Sin tramos registrados.</td></tr>"
+        : analisisIntervalosVelocidad
+            .map(i => `<tr><td>${i.inicio}</td><td>${i.fin}</td><td>${i.duracion}</td><td>${i.distancia}</td><td>${i.velocidadMedia}</td></tr>`)
+            .join("");
+
     const jsGeneradorIconos = obtenerIconoVisual.toString();
  
     const documentoHtmlCompleto = `<!DOCTYPE html>
@@ -1225,6 +1507,12 @@ ${distanciaReferenciaMts ? `<tr><td>Distancia Referencia</td><td>${payloadData.d
 <tr><td>Eficiencia Operativa</td><td><b>${payloadData.eficiencia}</b></td></tr>
 </table>
  
+<h3>Análisis de Velocidad por Intervalos de Marcha</h3>
+<table>
+<thead><tr><th>Inicio</th><th>Fin</th><th>Duración</th><th>Distancia</th><th>Vel. Media</th></tr></thead>
+<tbody>${filasInt}</tbody>
+</table>
+
 <div style="background:#f0f7ff;padding:0;margin-top:20px;border-left:4px solid var(--info);border-radius:6px;overflow:hidden;">
   <button onclick="toggleAccordion(this)" style="width:100%;text-align:left;padding:16px;background:#f0f7ff;border:none;cursor:pointer;font-size:0.95em;font-weight:bold;color:#2c3e50;display:flex;justify-content:space-between;align-items:center;">
     <span>📐 Índice de Marcha (Running Time Index - RTI)</span>
@@ -1371,6 +1659,7 @@ function toggleAccordion(btn) {
         eventos: registroEventosEspeciales.map(ev => ({
             hora: ev.hora, evento: ev.evento, detalle: ev.detalle
         })),
+        intervalos: analisisIntervalosVelocidad,
         htmlBase64: base64Html
     };
  
@@ -1402,8 +1691,8 @@ function exportarExcel() {
         ["Hasta",                   document.getElementById('in-hasta').value],
         ["Sentido",                 document.getElementById('in-sentido').value  || '-'],
         ["Operador",                document.getElementById('in-operador').value || '-'],
-        ["Clima",                   document.getElementById('in-clima').value    || '-'],
-        ["Período",                 document.getElementById('in-periodo').value  || '-'],
+        ["Clima",                   obtenerValorCompuesto('in-clima')],
+        ["Período",                 obtenerValorCompuesto('in-periodo')],
         ["Fecha y Hora",            fechaHoraEstudio],
         ["Distancia GPS",           document.getElementById('rep-distancia').innerText],
         ["Distancia Referencia",    distanciaReferenciaMts ? document.getElementById('rep-distancia-ref').innerText : '-'],
@@ -1491,14 +1780,17 @@ function formatearMinutosSegundos(segs) {
     return `${String(Math.floor(segs / 60)).padStart(2, '0')}:${String(segs % 60).padStart(2, '0')}`;
 }
  
-function horaArgentina() {
-    return new Date().toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+function horaArgentina(ts) {
+    const d = ts ? new Date(ts) : new Date();
+    return d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
 }
  
-function registrarLogGeneral(lat, lng, vel, evento, det) {
-    const fecha = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+function registrarLogGeneral(lat, lng, vel, evento, det, ts) {
+    const timestamp = ts || Date.now();
+    const fecha = horaArgentina(timestamp);
     historialDatos.push({
         Hora: fecha,
+        Timestamp: timestamp,
         Latitud: lat.toFixed(6),
         Longitud: lng.toFixed(6),
         Velocidad_Kmh: vel.toFixed(2),
@@ -1515,9 +1807,29 @@ function reiniciarApp() {
     document.getElementById('in-sentido').value   = "";
     document.getElementById('in-operador').value  = "";
     document.getElementById('in-clima').value     = "";
+    document.getElementById('in-clima-extra').value = "";
     document.getElementById('in-periodo').value   = "";
+    document.getElementById('in-periodo-extra').value = "";
     document.getElementById('in-distancia-ref').value = "";
  
+    // Reset de estados activos
+    estadosActivos = { media: false, critica: false, carrilLento: false };
+    document.getElementById('contenedor-estados-activos').innerHTML = "";
+
+    // Reset de botones de selección
+    document.querySelectorAll('.btn-seleccion').forEach(btn => btn.classList.remove('seleccionado'));
+
+    // Liberar Wake Lock si existe
+    if (wakeLock !== null) {
+        wakeLock.release().then(() => { wakeLock = null; });
+    }
+
+    // Liberar botón de Google Drive para un nuevo recorrido
+    const btnDrive = document.getElementById('btn-subir-drive');
+    btnDrive.innerText = "☁️ Guardar en Google Drive";
+    btnDrive.disabled = false;
+    btnDrive.style.backgroundColor = "";
+
     map.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.CircleMarker || layer instanceof L.Polyline) {
             map.removeLayer(layer);
