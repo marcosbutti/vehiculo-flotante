@@ -710,6 +710,10 @@
             <label>Intersección Destino (Hasta):</label>
             <input type="text" id="in-hasta" placeholder="Ej: Av. Belgrano">
         </div>
+        <div class="form-group">
+            <label>Plan de Semáforos:</label>
+            <input type="number" id="in-plan" placeholder="Ej: 1" min="0" step="1">
+        </div>
 
         <hr class="separador-form">
         <p class="form-seccion-label">Metadatos del estudio</p>
@@ -718,9 +722,9 @@
             <label>Sentido de Circulación:</label>
             <input type="hidden" id="in-sentido">
             <div class="selector-rapido" id="selector-sentido">
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Norte-Sur', this)">⬆️ Norte a
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Norte-Sur', this)">⬇️ Norte a
                     Sur</button>
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Sur-Norte', this)">⬇️ Sur a
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Sur-Norte', this)">⬆️ Sur a
                     Norte</button>
                 <button class="btn-seleccion" onclick="seleccionarOpcion('in-sentido', 'Este-Oeste', this)">⬅️ Este a
                     Oeste</button>
@@ -793,7 +797,9 @@
 
         <div id="map-wrapper">
             <div id="map"></div>
-            <button id="btn-deshacer-flotante" onclick="deshacerUltimoEvento()" style="position: absolute; bottom: 15px; left: 10px; z-index: 900; background: rgba(44,62,80,0.9); color: white; padding: 8px 12px; border-radius: 8px; border: none; font-size: 0.82em; font-weight: bold; cursor: pointer; display: none; backdrop-filter: blur(4px); transition: opacity 0.2s;">↩️ Deshacer</button>
+            <button id="btn-deshacer-flotante" onclick="deshacerUltimoEvento()"
+                style="position: absolute; bottom: 15px; left: 10px; z-index: 900; background: rgba(44,62,80,0.9); color: white; padding: 8px 12px; border-radius: 8px; border: none; font-size: 0.82em; font-weight: bold; cursor: pointer; display: none; backdrop-filter: blur(4px); transition: opacity 0.2s;">↩️
+                Deshacer</button>
             <div id="badge-gps-precision"></div>
         </div>
 
@@ -857,6 +863,10 @@
                 <tr>
                     <td>Período del Día</td>
                     <td id="rep-periodo">-</td>
+                </tr>
+                <tr>
+                    <td>Plan de Semáforos</td>
+                    <td id="rep-plan">-</td>
                 </tr>
 
                 <tr style="border-top: 2px solid var(--primary);">
@@ -979,7 +989,8 @@
                 <button class="btn-obs-opcion" onclick="inyectarObservacion('Obras en Calzada')">🚧 Obras</button>
                 <button class="btn-obs-opcion" onclick="inyectarObservacion('Zona Industrial')">🏭 Zona Ind.</button>
                 <button class="btn-obs-opcion" onclick="inyectarObservacion('Peatones en Calzada')">🚶 Peatones</button>
-                <button class="btn-obs-opcion" onclick="inyectarObservacion('Bicicleta en Calzada')">🚲 Bicicleta</button>
+                <button class="btn-obs-opcion" onclick="inyectarObservacion('Bicicleta en Calzada')">🚲
+                    Bicicleta</button>
                 <button class="btn-obs-opcion" style="background:#fffde7; color:#b7950b; border:1.5px solid #f1c40f;"
                     onclick="inyectarObservacion('Cruce en Amarillo')">🟡 Amarillo</button>
                 <button class="btn-obs-opcion" onclick="inyectarObservacion('Cambio Carril (Rápido a Lento)')">↘️ Ráp. a
@@ -987,11 +998,11 @@
                 <button class="btn-obs-opcion" onclick="inyectarObservacion('Cambio Carril (Lento a Rápido)')">↗️ Lento
                     a Ráp.</button>
                 <button class="btn-obs-opcion" style="background:#fff8e1; color:#b7770d; border:1.5px solid #f39c12;"
-                    onclick="inyectarObservacion('Inicio Congestión Media')">🟡 Ini. Cong. Media</button>
+                    onclick="inyectarObservacion('Inicio Congestión Media')">🟡 Inicio Cong. Media</button>
                 <button class="btn-obs-opcion" style="background:#fff8e1; color:#b7770d; border:1.5px solid #f39c12;"
                     onclick="inyectarObservacion('Fin Congestión Media')">🟢 Fin Cong. Media</button>
                 <button class="btn-obs-opcion" style="background:#fdecea; color:#c0392b; border:1.5px solid #e74c3c;"
-                    onclick="inyectarObservacion('Inicio Congestión Crítica')">🔴 Ini. Cong. Crítica</button>
+                    onclick="inyectarObservacion('Inicio Congestión Crítica')">🔴 Inicio Cong. Crítica</button>
                 <button class="btn-obs-opcion" style="background:#fdecea; color:#c0392b; border:1.5px solid #e74c3c;"
                     onclick="inyectarObservacion('Fin Congestión Crítica')">🟢 Fin Cong. Crítica</button>
             </div>
@@ -1010,7 +1021,7 @@
 
     <!-- ══════════════════════════════════════════════════
      MODAL — CRONÓMETRO SEMÁFORO
-══════════════════════════════════════════════════ -->
+    ══════════════════════════════════════════════════ -->
     <div id="modal-semaforo">
         <div class="modal-semaforo-content">
             <div class="semaforo-icono">🚦</div>
@@ -1034,14 +1045,14 @@
                 <input type="text" id="semaforo-nota" placeholder="Ej: 1ro, o intersección Pellegrini y Oroño..."
                     oninput="deseleccionarBotones('selector-semaforo-posicion')">
             </div>
-            <button id="btn-verde" onclick="finalizarSemaforo()">🟢 VERDE — Registrar y continuar</button>
+            <button id="btn-verde" onclick="finalizarSemaforo()">🟢 VERDE</button>
         </div>
     </div>
 
 
     <!-- ══════════════════════════════════════════════════
      JAVASCRIPT
-══════════════════════════════════════════════════ -->
+    ══════════════════════════════════════════════════ -->
     <script>
         // ────────────────────────────────────────────────────
         //  CONFIGURACIÓN
@@ -1460,7 +1471,7 @@
             else if (tipoString.includes('Congestión Media')) { emoji = '🟡'; colorHex = '#f1c40f'; size = 16; }
             else if (tipoString.includes('Congestión Crítica')) { emoji = '🛑'; colorHex = '#c0392b'; size = 22; }
             else if (tipoString.includes('Rápido a Lento')) { emoji = '↘️'; colorHex = '#16a085'; size = 16; }
-            else if (tipoString.includes('Lento a Rápido')) { emoji = '↗️'; colorHex = '#16a085'; size = 16; }
+            else if (tipoString.includes('Lento a Rápido')) { emoji = '↖️'; colorHex = '#16a085'; size = 16; }
             else if (tipoString.includes('Peatones')) { emoji = '🚶'; colorHex = '#2980b9'; }
             else if (tipoString.includes('Bicicleta') || tipoString.includes('Ciclista')) { emoji = '🚲'; colorHex = '#2ecc71'; }
             else if (tipoString.includes('Amarillo')) { emoji = '🟡'; colorHex = '#f1c40f'; }
@@ -1523,7 +1534,7 @@
                         averageSpeedKmh = (segmentDistance / segmentDurationSec) * 3.6;
                     }
 
-analisisIntervalosVelocidad.push({
+                    analisisIntervalosVelocidad.push({
                         inicio: new Date(segmentStartTime).toLocaleTimeString('es-AR'),
                         fin: new Date(segmentEndTime).toLocaleTimeString('es-AR'),
                         duracion: formatearMinutosSegundos(Math.floor(segmentDurationSec)),
@@ -1552,9 +1563,10 @@ analisisIntervalosVelocidad.push({
                 climaExtra: document.getElementById('in-clima-extra').value,
                 periodo: document.getElementById('in-periodo').value,
                 periodoExtra: document.getElementById('in-periodo-extra').value,
+                plan: document.getElementById('in-plan').value,
                 distanciaRef: distanciaReferenciaMts,
                 fechaHoraEstudio: fechaHoraEstudio,
-                
+
                 segTotales: segTotales,
                 segMovimiento: segMovimiento,
                 segFrenadoTotal: segFrenadoTotal,
@@ -1614,6 +1626,7 @@ analisisIntervalosVelocidad.push({
             document.getElementById('in-clima-extra').value = backup.climaExtra || "";
             document.getElementById('in-periodo').value = backup.periodo || "";
             document.getElementById('in-periodo-extra').value = backup.periodoExtra || "";
+            document.getElementById('in-plan').value = backup.plan || "";
             document.getElementById('in-distancia-ref').value = backup.distanciaRef || "";
 
             // Seleccionar botones visuales correspondientes
@@ -1746,7 +1759,7 @@ analisisIntervalosVelocidad.push({
             if (registroEventosEspeciales.length === 0) return;
 
             const ultimoEv = registroEventosEspeciales.pop();
-            
+
             if (ultimoEv.tipo === "observacion") {
                 contadorObservaciones = Math.max(0, contadorObservaciones - 1);
             } else if (ultimoEv.tipo === "semaforo") {
@@ -1790,12 +1803,12 @@ analisisIntervalosVelocidad.push({
             registroEventosEspeciales.forEach(ev => {
                 if (ev.tipo === "observacion") {
                     const tipoObs = ev.detalle;
-                    if (tipoObs.includes('Inicio Congestión Media'))   estadosActivos.media = true;
-                    if (tipoObs.includes('Fin Congestión Media'))      estadosActivos.media = false;
+                    if (tipoObs.includes('Inicio Congestión Media')) estadosActivos.media = true;
+                    if (tipoObs.includes('Fin Congestión Media')) estadosActivos.media = false;
                     if (tipoObs.includes('Inicio Congestión Crítica')) estadosActivos.critica = true;
-                    if (tipoObs.includes('Fin Congestión Crítica'))    estadosActivos.critica = false;
-                    if (tipoObs.includes('Rápido a Lento'))            estadosActivos.carrilLento = true;
-                    if (tipoObs.includes('Lento a Rápido'))            estadosActivos.carrilLento = false;
+                    if (tipoObs.includes('Fin Congestión Crítica')) estadosActivos.critica = false;
+                    if (tipoObs.includes('Rápido a Lento')) estadosActivos.carrilLento = true;
+                    if (tipoObs.includes('Lento a Rápido')) estadosActivos.carrilLento = false;
                 }
             });
 
@@ -2043,6 +2056,7 @@ analisisIntervalosVelocidad.push({
             document.getElementById('rep-operador').innerText = document.getElementById('in-operador').value || '-';
             document.getElementById('rep-clima').innerText = obtenerValorCompuesto('in-clima');
             document.getElementById('rep-periodo').innerText = obtenerValorCompuesto('in-periodo');
+            document.getElementById('rep-plan').innerText = document.getElementById('in-plan').value || '-';
 
             document.getElementById('rep-distancia').innerText = distFinalText;
 
@@ -2258,6 +2272,7 @@ analisisIntervalosVelocidad.push({
                 operador: document.getElementById('in-operador').value || '-',
                 clima: obtenerValorCompuesto('in-clima'),
                 periodo: obtenerValorCompuesto('in-periodo'),
+                plan: document.getElementById('in-plan').value || '-',
                 distanciaRef: distanciaReferenciaMts ? (distanciaReferenciaMts >= 1000
                     ? (distanciaReferenciaMts / 1000).toFixed(3) + " km"
                     : distanciaReferenciaMts + " m") : '-',
@@ -2333,6 +2348,7 @@ tr:hover{background:#f8fbff;}
 <tr><td>Operador</td><td>${payloadData.operador}</td></tr>
 <tr><td>Condición Climática</td><td>${payloadData.clima}</td></tr>
 <tr><td>Período del Día</td><td>${payloadData.periodo}</td></tr>
+<tr><td>Plan de Semáforos</td><td>${payloadData.plan}</td></tr>
 <tr style="border-top:2px solid var(--primary)"><td>Distancia GPS</td><td><b style="color:var(--info)">${payloadData.distancia}</b></td></tr>
 ${distanciaReferenciaMts ? `<tr><td>Distancia Referencia</td><td>${payloadData.distanciaRef}</td></tr>
 <tr><td>Error Relativo GPS</td><td><b>${payloadData.errorGps || '-'}</b></td></tr>` : ''}
@@ -2538,6 +2554,7 @@ function toggleAccordion(btn) {
                 ["Operador", document.getElementById('in-operador').value || '-'],
                 ["Clima", obtenerValorCompuesto('in-clima')],
                 ["Período", obtenerValorCompuesto('in-periodo')],
+                ["Plan de Semáforos", document.getElementById('in-plan').value || '-'],
                 ["Fecha y Hora", fechaHoraEstudio],
                 ["Distancia GPS", document.getElementById('rep-distancia').innerText],
                 ["Distancia Referencia", distanciaReferenciaMts ? document.getElementById('rep-distancia-ref').innerText : '-'],
@@ -2657,6 +2674,7 @@ function toggleAccordion(btn) {
             document.getElementById('in-clima-extra').value = "";
             document.getElementById('in-periodo').value = "";
             document.getElementById('in-periodo-extra').value = "";
+            document.getElementById('in-plan').value = "";
             document.getElementById('in-distancia-ref').value = "";
 
             // Reset de estados activos
