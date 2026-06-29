@@ -396,6 +396,17 @@
             color: var(--semaforo);
         }
 
+        .badge-gps-ok {
+            border-color: var(--accent);
+            color: var(--drive);
+        }
+
+        .badge-gps-action {
+            pointer-events: auto !important;
+            cursor: pointer;
+            user-select: none;
+        }
+
         /* Estilos para inputs adicionales más pequeños */
         .input-extra {
             margin-top: 8px;
@@ -1127,6 +1138,7 @@
             }).addTo(map);
             rutaInstancia = L.polyline([], { color: '#3498db', weight: 6 }).addTo(map);
             verificarRespaldoActivo();
+            actualizarGPSConfig();
         };
 
         // ────────────────────────────────────────────────────
@@ -1135,6 +1147,118 @@
         function cambiarPantalla(idPantalla) {
             document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
             document.getElementById(idPantalla).classList.add('activa');
+            actualizarGPSConfig();
+        }
+
+        // ────────────────────────────────────────────────────
+        //  MONITOREO DE GPS EN PANTALLA INICIAL
+        // ────────────────────────────────────────────────────
+        function actualizarGPSConfig() {
+            const configPantalla = document.getElementById('pantalla-config');
+            const cont = document.getElementById('contenedor-estados-activos');
+            
+            // Si no estamos en la pantalla inicial, remover el badge de GPS del inicio si existe
+            if (!configPantalla || !configPantalla.classList.contains('activa')) {
+                const bGps = document.getElementById('badge-gps-config');
+                if (bGps) bGps.remove();
+                return;
+            }
+
+            if (!cont) return;
+
+            let bGps = document.getElementById('badge-gps-config');
+            if (!bGps) {
+                bGps = document.createElement('div');
+                bGps.id = 'badge-gps-config';
+                cont.appendChild(bGps);
+            }
+
+            if (!("geolocation" in navigator)) {
+                bGps.className = "badge-estado badge-critica";
+                bGps.innerHTML = "❌ GPS no soportado";
+                bGps.style.pointerEvents = "none";
+                return;
+            }
+
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({ name: 'geolocation' }).then(permissionStatus => {
+                    const actualizarConEstado = (state) => {
+                        if (state === 'granted') {
+                            bGps.className = "badge-estado badge-gps-ok";
+                            bGps.innerHTML = "📡 GPS Activo";
+                            bGps.style.pointerEvents = "none";
+                        } else if (state === 'denied') {
+                            bGps.className = "badge-estado badge-critica badge-gps-action";
+                            bGps.innerHTML = "❌ GPS Bloqueado";
+                            bGps.style.pointerEvents = "auto";
+                            bGps.onclick = () => {
+                                alert("El acceso al GPS está bloqueado. Por favor, habilítalo en la configuración de tu navegador para este sitio.");
+                            };
+                        } else { // 'prompt'
+                            bGps.className = "badge-estado badge-media badge-gps-action";
+                            bGps.innerHTML = "⚠️ Activar GPS";
+                            bGps.style.pointerEvents = "auto";
+                            bGps.onclick = () => {
+                                bGps.innerHTML = "⏳ Solicitando GPS...";
+                                navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                        actualizarConEstado('granted');
+                                    },
+                                    (err) => {
+                                        if (err.code === err.PERMISSION_DENIED) {
+                                            actualizarConEstado('denied');
+                                        } else {
+                                            bGps.className = "badge-estado badge-critica";
+                                            bGps.innerHTML = "❌ Error GPS";
+                                            setTimeout(() => actualizarGPSConfig(), 3000);
+                                        }
+                                    },
+                                    { enableHighAccuracy: true, timeout: 5000 }
+                                );
+                            };
+                        }
+                    };
+
+                    actualizarConEstado(permissionStatus.state);
+                    permissionStatus.onchange = () => {
+                        actualizarConEstado(permissionStatus.state);
+                    };
+                }).catch(err => {
+                    detectarGPSFallback(bGps);
+                });
+            } else {
+                detectarGPSFallback(bGps);
+            }
+        }
+
+        function detectarGPSFallback(bGps) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    bGps.className = "badge-estado badge-gps-ok";
+                    bGps.innerHTML = "📡 GPS Activo";
+                    bGps.style.pointerEvents = "none";
+                },
+                (err) => {
+                    bGps.className = "badge-estado badge-media badge-gps-action";
+                    bGps.innerHTML = "⚠️ Activar GPS";
+                    bGps.style.pointerEvents = "auto";
+                    bGps.onclick = () => {
+                        bGps.innerHTML = "⏳ Solicitando GPS...";
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                detectarGPSFallback(bGps);
+                            },
+                            (err) => {
+                                bGps.className = "badge-estado badge-critica";
+                                bGps.innerHTML = "❌ Sin acceso al GPS";
+                                setTimeout(() => detectarGPSFallback(bGps), 3000);
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                    };
+                },
+                { enableHighAccuracy: true, timeout: 1500 }
+            );
         }
 
         /**
