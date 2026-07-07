@@ -11,6 +11,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <!-- PWA Meta Tags y Manifiesto -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script>
+        // Registro del Service Worker para soporte offline PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+                    .catch(err => console.error('Error al registrar el Service Worker:', err));
+            });
+        }
+    </script>
+
     <style>
         :root {
             --primary: #2c3e50;
@@ -635,14 +653,13 @@
         /* ── GRÁFICO PERFIL ── */
         #contenedor-grafico {
             width: 100%;
-            overflow-x: auto;
             margin-top: 10px;
         }
 
         #canvas-perfil-velocidad {
             display: block;
-            min-width: 300px;
-            height: 180px;
+            width: 100%;
+            height: 220px;
             border-radius: 8px;
             background: #f8f9fa;
         }
@@ -771,11 +788,9 @@
             <label>Período del Día:</label>
             <input type="hidden" id="in-periodo">
             <div class="selector-rapido" id="selector-periodo">
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Pico Mañana', this)">🌅 Pico
-                    Mañana</button>
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Valle', this)">☀️ Valle</button>
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Pico Tarde', this)">🌇 Pico
-                    Tarde</button>
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Mañana', this)">🌅 Mañana</button>
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Mediodía', this)">☀️ Mediodía</button>
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Tarde', this)">🌇 Tarde</button>
             </div>
             <input type="text" id="in-periodo-extra" class="input-extra" placeholder="Otro/Adicional...">
         </div>
@@ -1187,6 +1202,16 @@
                             bGps.className = "badge-estado badge-gps-ok";
                             bGps.innerHTML = "📡 GPS Activo";
                             bGps.style.pointerEvents = "none";
+                            
+                            // Desaparecer después de 3 segundos
+                            setTimeout(() => {
+                                const el = document.getElementById('badge-gps-config');
+                                if (el) {
+                                    el.style.opacity = '0';
+                                    el.style.transform = 'scale(0.9)';
+                                    setTimeout(() => el.remove(), 500);
+                                }
+                            }, 3000);
                         } else if (state === 'denied') {
                             bGps.className = "badge-estado badge-critica badge-gps-action";
                             bGps.innerHTML = "❌ GPS Bloqueado";
@@ -1237,6 +1262,16 @@
                     bGps.className = "badge-estado badge-gps-ok";
                     bGps.innerHTML = "📡 GPS Activo";
                     bGps.style.pointerEvents = "none";
+                    
+                    // Desaparecer después de 3 segundos
+                    setTimeout(() => {
+                        const el = document.getElementById('badge-gps-config');
+                        if (el) {
+                            el.style.opacity = '0';
+                            el.style.transform = 'scale(0.9)';
+                            setTimeout(() => el.remove(), 500);
+                        }
+                    }, 3000);
                 },
                 (err) => {
                     bGps.className = "badge-estado badge-media badge-gps-action";
@@ -1641,6 +1676,7 @@
             let segmentStartLat = null;
             let segmentStartLng = null;
             let segmentDistance = 0;
+            let segmentStartIdx = null;
 
             for (let i = 0; i < historialDatos.length; i++) {
                 const punto = historialDatos[i];
@@ -1652,6 +1688,7 @@
                         segmentStartLat = parseFloat(punto.Latitud);
                         segmentStartLng = parseFloat(punto.Longitud);
                         segmentDistance = 0;
+                        segmentStartIdx = i;
                     }
                     currentSegment.push(punto);
 
@@ -1677,7 +1714,10 @@
                         fin: new Date(segmentEndTime).toLocaleTimeString('es-AR'),
                         duracion: formatearMinutosSegundos(Math.floor(segmentDurationSec)),
                         distancia: segmentDistance > 1000 ? (segmentDistance / 1000).toFixed(2) + " km" : Math.floor(segmentDistance) + " m",
-                        velocidadMedia: averageSpeedKmh.toFixed(1) + " km/h"
+                        velocidadMedia: averageSpeedKmh.toFixed(1) + " km/h",
+                        velocidadMediaVal: averageSpeedKmh,
+                        idxInicio: segmentStartIdx,
+                        idxFin: i
                     });
                     currentSegment = [];
                 }
@@ -2278,18 +2318,26 @@
                 return;
             }
 
-            // Ancho adaptativo
-            const anchoMin = 300;
-            const anchoPorPunto = 4;
-            const anchoCalc = Math.max(anchoMin, muestrasPerfil.length * anchoPorPunto);
-            canvas.width = anchoCalc;
-            canvas.height = 180;
-            canvas.style.width = anchoCalc + "px";
-            canvas.style.height = "180px";
+        function dibujarPerfilVelocidad() {
+            const canvas = document.getElementById('canvas-perfil-velocidad');
+            const contenedor = document.getElementById('contenedor-grafico');
+
+            if (!muestrasPerfil.length) {
+                canvas.style.display = 'none';
+                return;
+            }
+
+            // Ancho real del contenedor (sin scroll horizontal)
+            const anchoDisponible = contenedor.clientWidth || 300;
+            const altoCanvas = 220;
+            canvas.width = anchoDisponible;
+            canvas.height = altoCanvas;
+            canvas.style.width = '100%';
+            canvas.style.height = altoCanvas + 'px';
 
             const ctx = canvas.getContext('2d');
             const W = canvas.width, H = canvas.height;
-            const PAD_L = 45, PAD_R = 12, PAD_T = 16, PAD_B = 36;
+            const PAD_L = 45, PAD_R = 12, PAD_T = 20, PAD_B = 36;
             const plotW = W - PAD_L - PAD_R;
             const plotH = H - PAD_T - PAD_B;
 
@@ -2300,6 +2348,7 @@
 
             const xPt = t => PAD_L + (t / tMax) * plotW;
             const yPt = v => PAD_T + (1 - v / velEscala) * plotH;
+            const xIdx = idx => PAD_L + (idx / Math.max(historialDatos.length - 1, 1)) * plotW;
 
             // Fondo
             ctx.clearRect(0, 0, W, H);
@@ -2356,10 +2405,8 @@
                 if (!ev.tipo) return;
                 const puntoRef = historialDatos[ev.refIndex];
                 if (!puntoRef) return;
-                // Aproximar tiempo del evento
                 const idxH = parseInt(ev.refIndex);
                 if (isNaN(idxH)) return;
-                // Buscar el segTotales aproximado proporcional al índice
                 const tEvento = Math.round((idxH / historialDatos.length) * tMax);
                 const x = xPt(tEvento);
                 if (ev.tipo === 'semaforo') {
@@ -2372,6 +2419,53 @@
                     ctx.setLineDash([]);
                 }
             });
+
+            // Etiquetas de velocidad media por intervalo de marcha
+            if (analisisIntervalosVelocidad.length > 0 && historialDatos.length > 1) {
+                analisisIntervalosVelocidad.forEach(intervalo => {
+                    if (intervalo.idxInicio === undefined || intervalo.idxFin === undefined) return;
+                    if (intervalo.velocidadMediaVal <= 0) return;
+
+                    const x1 = xIdx(intervalo.idxInicio);
+                    const x2 = xIdx(intervalo.idxFin);
+                    const xCentro = (x1 + x2) / 2;
+                    const anchoSeg = x2 - x1;
+
+                    // Línea horizontal de referencia a la velocidad media del intervalo
+                    const yMedia = yPt(intervalo.velocidadMediaVal);
+                    ctx.strokeStyle = 'rgba(39, 174, 96, 0.6)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([5, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(x1, yMedia);
+                    ctx.lineTo(x2, yMedia);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Etiqueta con la velocidad media (solo si el segmento es suficientemente ancho)
+                    if (anchoSeg > 28) {
+                        const etiqueta = intervalo.velocidadMedia;
+                        ctx.font = 'bold 9px sans-serif';
+                        const metricaAncho = ctx.measureText(etiqueta).width;
+                        const padEtiq = 4;
+                        const boxW = metricaAncho + padEtiq * 2;
+                        const boxH = 14;
+                        const boxX = Math.max(PAD_L + 2, Math.min(xCentro - boxW / 2, W - PAD_R - boxW - 2));
+                        const boxY = yMedia - boxH - 3;
+
+                        // Fondo de la etiqueta
+                        ctx.fillStyle = 'rgba(39, 174, 96, 0.85)';
+                        ctx.beginPath();
+                        ctx.roundRect(boxX, boxY, boxW, boxH, 3);
+                        ctx.fill();
+
+                        // Texto de la etiqueta
+                        ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(etiqueta, boxX + boxW / 2, boxY + boxH - 3);
+                    }
+                });
+            }
 
             // Leyenda compacta
             ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
@@ -2386,6 +2480,11 @@
             ctx.fillStyle = '#e74c3c';
             ctx.fillRect(PAD_L + 158, PAD_T, 10, 10);
             ctx.fillStyle = '#555'; ctx.fillText("Parada", PAD_L + 171, PAD_T + 9);
+
+            ctx.fillStyle = 'rgba(39, 174, 96, 0.85)';
+            ctx.fillRect(PAD_L + 224, PAD_T, 10, 10);
+            ctx.fillStyle = '#555'; ctx.fillText("V. Media tramo", PAD_L + 237, PAD_T + 9);
+        }
         }
 
         // ────────────────────────────────────────────────────
