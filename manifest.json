@@ -1,6 +1,6 @@
 {
   "name": "Vehículo Flotante",
-  "short_name": "Veh. Flotante",
+  "short_name": "Vehículo Flotante",
   "description": "Estudio de Vehículo Flotante e Ingeniería de Tránsito",
   "start_url": "./index.html",
   "display": "standalone",

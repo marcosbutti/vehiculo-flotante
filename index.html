@@ -788,8 +788,10 @@
             <label>Período del Día:</label>
             <input type="hidden" id="in-periodo">
             <div class="selector-rapido" id="selector-periodo">
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Mañana', this)">🌅 Mañana</button>
-                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Mediodía', this)">☀️ Mediodía</button>
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Mañana', this)">🌅
+                    Mañana</button>
+                <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Mediodía', this)">☀️
+                    Mediodía</button>
                 <button class="btn-seleccion" onclick="seleccionarOpcion('in-periodo', 'Tarde', this)">🌇 Tarde</button>
             </div>
             <input type="text" id="in-periodo-extra" class="input-extra" placeholder="Otro/Adicional...">
@@ -1171,7 +1173,7 @@
         function actualizarGPSConfig() {
             const configPantalla = document.getElementById('pantalla-config');
             const cont = document.getElementById('contenedor-estados-activos');
-            
+
             // Si no estamos en la pantalla inicial, remover el badge de GPS del inicio si existe
             if (!configPantalla || !configPantalla.classList.contains('activa')) {
                 const bGps = document.getElementById('badge-gps-config');
@@ -1202,7 +1204,7 @@
                             bGps.className = "badge-estado badge-gps-ok";
                             bGps.innerHTML = "📡 GPS Activo";
                             bGps.style.pointerEvents = "none";
-                            
+
                             // Desaparecer después de 3 segundos
                             setTimeout(() => {
                                 const el = document.getElementById('badge-gps-config');
@@ -1262,7 +1264,7 @@
                     bGps.className = "badge-estado badge-gps-ok";
                     bGps.innerHTML = "📡 GPS Activo";
                     bGps.style.pointerEvents = "none";
-                    
+
                     // Desaparecer después de 3 segundos
                     setTimeout(() => {
                         const el = document.getElementById('badge-gps-config');
@@ -2007,7 +2009,7 @@
             else if (tipoString.includes('Inicio Congestión Crítica')) return '🔴';
             else if (tipoString.includes('Fin Congestión Crítica')) return '🟢';
             else if (tipoString.includes('Rápido a Lento')) return '↘️';
-            else if (tipoString.includes('Lento a Rápido')) return '↗️';
+            else if (tipoString.includes('Lento a Rápido')) return '↖️';
             else if (tipoString.includes('Peatones')) return '🚶';
             else if (tipoString.includes('Bicicleta') || tipoString.includes('Ciclista')) return '🚲';
             else if (tipoString.includes('Amarillo')) return '🟡';
@@ -2318,173 +2320,173 @@
                 return;
             }
 
-        function dibujarPerfilVelocidad() {
-            const canvas = document.getElementById('canvas-perfil-velocidad');
-            const contenedor = document.getElementById('contenedor-grafico');
+            function dibujarPerfilVelocidad() {
+                const canvas = document.getElementById('canvas-perfil-velocidad');
+                const contenedor = document.getElementById('contenedor-grafico');
 
-            if (!muestrasPerfil.length) {
-                canvas.style.display = 'none';
-                return;
-            }
-
-            // Ancho real del contenedor (sin scroll horizontal)
-            const anchoDisponible = contenedor.clientWidth || 300;
-            const altoCanvas = 220;
-            canvas.width = anchoDisponible;
-            canvas.height = altoCanvas;
-            canvas.style.width = '100%';
-            canvas.style.height = altoCanvas + 'px';
-
-            const ctx = canvas.getContext('2d');
-            const W = canvas.width, H = canvas.height;
-            const PAD_L = 45, PAD_R = 12, PAD_T = 20, PAD_B = 36;
-            const plotW = W - PAD_L - PAD_R;
-            const plotH = H - PAD_T - PAD_B;
-
-            // Escala
-            const velMax = Math.max(...muestrasPerfil.map(p => p.v), 10);
-            const velEscala = velMax * 1.1;
-            const tMax = muestrasPerfil[muestrasPerfil.length - 1].t;
-
-            const xPt = t => PAD_L + (t / tMax) * plotW;
-            const yPt = v => PAD_T + (1 - v / velEscala) * plotH;
-            const xIdx = idx => PAD_L + (idx / Math.max(historialDatos.length - 1, 1)) * plotW;
-
-            // Fondo
-            ctx.clearRect(0, 0, W, H);
-            ctx.fillStyle = '#f8f9fa';
-            ctx.fillRect(0, 0, W, H);
-
-            // Grilla horizontal
-            ctx.strokeStyle = '#dce0e4'; ctx.lineWidth = 0.8;
-            for (let v = 0; v <= velEscala; v += 10) {
-                const y = yPt(v);
-                ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
-                ctx.fillStyle = '#7f8c8d'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
-                ctx.fillText(v + " km/h", PAD_L - 4, y + 3);
-            }
-
-            // Línea UMBRAL_VELOCIDAD_PARADA
-            ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-            const yUmbral = yPt(UMBRAL_VELOCIDAD_PARADA);
-            ctx.beginPath(); ctx.moveTo(PAD_L, yUmbral); ctx.lineTo(W - PAD_R, yUmbral); ctx.stroke();
-            ctx.fillStyle = '#e74c3c'; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
-            ctx.fillText(`Umbral (${UMBRAL_VELOCIDAD_PARADA} km/h)`, PAD_L + 4, yUmbral - 3);
-            ctx.setLineDash([]);
-
-            // Área rellena bajo la curva
-            ctx.beginPath();
-            ctx.moveTo(xPt(muestrasPerfil[0].t), yPt(0));
-            muestrasPerfil.forEach(p => ctx.lineTo(xPt(p.t), yPt(p.v)));
-            ctx.lineTo(xPt(muestrasPerfil[muestrasPerfil.length - 1].t), yPt(0));
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(52, 152, 219, 0.15)';
-            ctx.fill();
-
-            // Línea de velocidad
-            ctx.beginPath();
-            ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2;
-            muestrasPerfil.forEach((p, i) => {
-                if (i === 0) ctx.moveTo(xPt(p.t), yPt(p.v));
-                else ctx.lineTo(xPt(p.t), yPt(p.v));
-            });
-            ctx.stroke();
-
-            // Eje X — marcas de tiempo
-            ctx.fillStyle = '#7f8c8d'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-            const pasoTicks = Math.max(1, Math.floor(tMax / 8));
-            for (let t = 0; t <= tMax; t += pasoTicks * 5) {
-                const x = xPt(t);
-                ctx.fillText(formatearMinutosSegundos(t), x, H - PAD_B + 16);
-                ctx.strokeStyle = '#dce0e4'; ctx.lineWidth = 0.5;
-                ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
-            }
-
-            // Marcas de paradas y semáforos
-            registroEventosEspeciales.forEach(ev => {
-                if (!ev.tipo) return;
-                const puntoRef = historialDatos[ev.refIndex];
-                if (!puntoRef) return;
-                const idxH = parseInt(ev.refIndex);
-                if (isNaN(idxH)) return;
-                const tEvento = Math.round((idxH / historialDatos.length) * tMax);
-                const x = xPt(tEvento);
-                if (ev.tipo === 'semaforo') {
-                    ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
-                    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
-                    ctx.setLineDash([]);
-                } else if (ev.tipo === 'parada') {
-                    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
-                    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
-                    ctx.setLineDash([]);
+                if (!muestrasPerfil.length) {
+                    canvas.style.display = 'none';
+                    return;
                 }
-            });
 
-            // Etiquetas de velocidad media por intervalo de marcha
-            if (analisisIntervalosVelocidad.length > 0 && historialDatos.length > 1) {
-                analisisIntervalosVelocidad.forEach(intervalo => {
-                    if (intervalo.idxInicio === undefined || intervalo.idxFin === undefined) return;
-                    if (intervalo.velocidadMediaVal <= 0) return;
+                // Ancho real del contenedor (sin scroll horizontal)
+                const anchoDisponible = contenedor.clientWidth || 300;
+                const altoCanvas = 220;
+                canvas.width = anchoDisponible;
+                canvas.height = altoCanvas;
+                canvas.style.width = '100%';
+                canvas.style.height = altoCanvas + 'px';
 
-                    const x1 = xIdx(intervalo.idxInicio);
-                    const x2 = xIdx(intervalo.idxFin);
-                    const xCentro = (x1 + x2) / 2;
-                    const anchoSeg = x2 - x1;
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width, H = canvas.height;
+                const PAD_L = 45, PAD_R = 12, PAD_T = 20, PAD_B = 36;
+                const plotW = W - PAD_L - PAD_R;
+                const plotH = H - PAD_T - PAD_B;
 
-                    // Línea horizontal de referencia a la velocidad media del intervalo
-                    const yMedia = yPt(intervalo.velocidadMediaVal);
-                    ctx.strokeStyle = 'rgba(39, 174, 96, 0.6)';
-                    ctx.lineWidth = 1.5;
-                    ctx.setLineDash([5, 3]);
-                    ctx.beginPath();
-                    ctx.moveTo(x1, yMedia);
-                    ctx.lineTo(x2, yMedia);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
+                // Escala
+                const velMax = Math.max(...muestrasPerfil.map(p => p.v), 10);
+                const velEscala = velMax * 1.1;
+                const tMax = muestrasPerfil[muestrasPerfil.length - 1].t;
 
-                    // Etiqueta con la velocidad media (solo si el segmento es suficientemente ancho)
-                    if (anchoSeg > 28) {
-                        const etiqueta = intervalo.velocidadMedia;
-                        ctx.font = 'bold 9px sans-serif';
-                        const metricaAncho = ctx.measureText(etiqueta).width;
-                        const padEtiq = 4;
-                        const boxW = metricaAncho + padEtiq * 2;
-                        const boxH = 14;
-                        const boxX = Math.max(PAD_L + 2, Math.min(xCentro - boxW / 2, W - PAD_R - boxW - 2));
-                        const boxY = yMedia - boxH - 3;
+                const xPt = t => PAD_L + (t / tMax) * plotW;
+                const yPt = v => PAD_T + (1 - v / velEscala) * plotH;
+                const xIdx = idx => PAD_L + (idx / Math.max(historialDatos.length - 1, 1)) * plotW;
 
-                        // Fondo de la etiqueta
-                        ctx.fillStyle = 'rgba(39, 174, 96, 0.85)';
-                        ctx.beginPath();
-                        ctx.roundRect(boxX, boxY, boxW, boxH, 3);
-                        ctx.fill();
+                // Fondo
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, W, H);
 
-                        // Texto de la etiqueta
-                        ctx.fillStyle = 'white';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(etiqueta, boxX + boxW / 2, boxY + boxH - 3);
+                // Grilla horizontal
+                ctx.strokeStyle = '#dce0e4'; ctx.lineWidth = 0.8;
+                for (let v = 0; v <= velEscala; v += 10) {
+                    const y = yPt(v);
+                    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+                    ctx.fillStyle = '#7f8c8d'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+                    ctx.fillText(v + " km/h", PAD_L - 4, y + 3);
+                }
+
+                // Línea UMBRAL_VELOCIDAD_PARADA
+                ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+                const yUmbral = yPt(UMBRAL_VELOCIDAD_PARADA);
+                ctx.beginPath(); ctx.moveTo(PAD_L, yUmbral); ctx.lineTo(W - PAD_R, yUmbral); ctx.stroke();
+                ctx.fillStyle = '#e74c3c'; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
+                ctx.fillText(`Umbral (${UMBRAL_VELOCIDAD_PARADA} km/h)`, PAD_L + 4, yUmbral - 3);
+                ctx.setLineDash([]);
+
+                // Área rellena bajo la curva
+                ctx.beginPath();
+                ctx.moveTo(xPt(muestrasPerfil[0].t), yPt(0));
+                muestrasPerfil.forEach(p => ctx.lineTo(xPt(p.t), yPt(p.v)));
+                ctx.lineTo(xPt(muestrasPerfil[muestrasPerfil.length - 1].t), yPt(0));
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.15)';
+                ctx.fill();
+
+                // Línea de velocidad
+                ctx.beginPath();
+                ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2;
+                muestrasPerfil.forEach((p, i) => {
+                    if (i === 0) ctx.moveTo(xPt(p.t), yPt(p.v));
+                    else ctx.lineTo(xPt(p.t), yPt(p.v));
+                });
+                ctx.stroke();
+
+                // Eje X — marcas de tiempo
+                ctx.fillStyle = '#7f8c8d'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+                const pasoTicks = Math.max(1, Math.floor(tMax / 8));
+                for (let t = 0; t <= tMax; t += pasoTicks * 5) {
+                    const x = xPt(t);
+                    ctx.fillText(formatearMinutosSegundos(t), x, H - PAD_B + 16);
+                    ctx.strokeStyle = '#dce0e4'; ctx.lineWidth = 0.5;
+                    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+                }
+
+                // Marcas de paradas y semáforos
+                registroEventosEspeciales.forEach(ev => {
+                    if (!ev.tipo) return;
+                    const puntoRef = historialDatos[ev.refIndex];
+                    if (!puntoRef) return;
+                    const idxH = parseInt(ev.refIndex);
+                    if (isNaN(idxH)) return;
+                    const tEvento = Math.round((idxH / historialDatos.length) * tMax);
+                    const x = xPt(tEvento);
+                    if (ev.tipo === 'semaforo') {
+                        ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+                        ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+                        ctx.setLineDash([]);
+                    } else if (ev.tipo === 'parada') {
+                        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+                        ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+                        ctx.setLineDash([]);
                     }
                 });
+
+                // Etiquetas de velocidad media por intervalo de marcha
+                if (analisisIntervalosVelocidad.length > 0 && historialDatos.length > 1) {
+                    analisisIntervalosVelocidad.forEach(intervalo => {
+                        if (intervalo.idxInicio === undefined || intervalo.idxFin === undefined) return;
+                        if (intervalo.velocidadMediaVal <= 0) return;
+
+                        const x1 = xIdx(intervalo.idxInicio);
+                        const x2 = xIdx(intervalo.idxFin);
+                        const xCentro = (x1 + x2) / 2;
+                        const anchoSeg = x2 - x1;
+
+                        // Línea horizontal de referencia a la velocidad media del intervalo
+                        const yMedia = yPt(intervalo.velocidadMediaVal);
+                        ctx.strokeStyle = 'rgba(39, 174, 96, 0.6)';
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([5, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(x1, yMedia);
+                        ctx.lineTo(x2, yMedia);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        // Etiqueta con la velocidad media (solo si el segmento es suficientemente ancho)
+                        if (anchoSeg > 28) {
+                            const etiqueta = intervalo.velocidadMedia;
+                            ctx.font = 'bold 9px sans-serif';
+                            const metricaAncho = ctx.measureText(etiqueta).width;
+                            const padEtiq = 4;
+                            const boxW = metricaAncho + padEtiq * 2;
+                            const boxH = 14;
+                            const boxX = Math.max(PAD_L + 2, Math.min(xCentro - boxW / 2, W - PAD_R - boxW - 2));
+                            const boxY = yMedia - boxH - 3;
+
+                            // Fondo de la etiqueta
+                            ctx.fillStyle = 'rgba(39, 174, 96, 0.85)';
+                            ctx.beginPath();
+                            ctx.roundRect(boxX, boxY, boxW, boxH, 3);
+                            ctx.fill();
+
+                            // Texto de la etiqueta
+                            ctx.fillStyle = 'white';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(etiqueta, boxX + boxW / 2, boxY + boxH - 3);
+                        }
+                    });
+                }
+
+                // Leyenda compacta
+                ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+                ctx.fillStyle = '#2980b9';
+                ctx.fillRect(PAD_L, PAD_T, 10, 10);
+                ctx.fillStyle = '#555'; ctx.fillText("Velocidad", PAD_L + 13, PAD_T + 9);
+
+                ctx.fillStyle = '#8e44ad';
+                ctx.fillRect(PAD_L + 80, PAD_T, 10, 10);
+                ctx.fillStyle = '#555'; ctx.fillText("Semáforo", PAD_L + 93, PAD_T + 9);
+
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(PAD_L + 158, PAD_T, 10, 10);
+                ctx.fillStyle = '#555'; ctx.fillText("Parada", PAD_L + 171, PAD_T + 9);
+
+                ctx.fillStyle = 'rgba(39, 174, 96, 0.85)';
+                ctx.fillRect(PAD_L + 224, PAD_T, 10, 10);
+                ctx.fillStyle = '#555'; ctx.fillText("V. Media tramo", PAD_L + 237, PAD_T + 9);
             }
-
-            // Leyenda compacta
-            ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
-            ctx.fillStyle = '#2980b9';
-            ctx.fillRect(PAD_L, PAD_T, 10, 10);
-            ctx.fillStyle = '#555'; ctx.fillText("Velocidad", PAD_L + 13, PAD_T + 9);
-
-            ctx.fillStyle = '#8e44ad';
-            ctx.fillRect(PAD_L + 80, PAD_T, 10, 10);
-            ctx.fillStyle = '#555'; ctx.fillText("Semáforo", PAD_L + 93, PAD_T + 9);
-
-            ctx.fillStyle = '#e74c3c';
-            ctx.fillRect(PAD_L + 158, PAD_T, 10, 10);
-            ctx.fillStyle = '#555'; ctx.fillText("Parada", PAD_L + 171, PAD_T + 9);
-
-            ctx.fillStyle = 'rgba(39, 174, 96, 0.85)';
-            ctx.fillRect(PAD_L + 224, PAD_T, 10, 10);
-            ctx.fillStyle = '#555'; ctx.fillText("V. Media tramo", PAD_L + 237, PAD_T + 9);
-        }
         }
 
         // ────────────────────────────────────────────────────
